@@ -1,0 +1,44 @@
+name: FastAPI CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure full repo is checked out
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest requests
+
+      - name: Check if test file exists
+        run: ls -R  # Debugging step
+
+      - name: Start FastAPI Server in the Background
+        run: |
+          uvicorn apiserver:app --host 127.0.0.1 --port 8000 --reload &
+          sleep 3  # Allow server time to start
+
+      - name: Wait for FastAPI to Start
+        run: |
+          for i in {1..10}; do
+            curl -s http://127.0.0.1:8000/docs && break
+            echo "Waiting for FastAPI..."
+            sleep 3
+          done
+
+      - name: Run Tests
+        run: pytest testautomation2.py --disable-warnings
